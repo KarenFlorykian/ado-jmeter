@@ -27,7 +27,7 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - task: Bash@3
-      displayName: Performance Test
+      displayName: Build App
       inputs:
         targetType: 'inline'
         script: |
@@ -57,7 +57,3 @@ stages:
       inputs:
         targetPath: reports/HtmlReport
         artifact: jmeter
-    - task: publishhtmlreport@1
-      inputs:
-        htmlType: 'Jmeter'
-        JmeterReportsPath: '$(Build.SourcesDirectory)/HtmlReport'
