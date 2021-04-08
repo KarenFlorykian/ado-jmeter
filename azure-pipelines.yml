@@ -1,0 +1,63 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  TEST: 'FloodIO'
+  RAMP_UP: '1'
+  DURATION: '60'
+  VUSERS: '10'
+  JVM_ARGS: '-Xms1g -Xmx1g'
+  JUNIT: 'True'
+
+stages:
+- stage: Build 
+  displayName: Build
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Bash@3
+      displayName: Performance Test
+      inputs:
+        targetType: 'inline'
+        script: |
+         echo "Done"
+- stage: PerfTest 
+  displayName: PerfTest
+  jobs:
+  - job: PerfTest
+    displayName: PerfTest
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Bash@3
+      displayName: Performance Test
+      inputs:
+        targetType: 'inline'
+        script: |
+         mkdir reports
+         docker run --rm -v $(Build.SourcesDirectory)/reports:/tmp/reports  -v $(Build.SourcesDirectory)/tests:/mnt/jmeter/ -e JVM_ARGS='${{ variables.JVM_ARGS }}' -e junit_report="{{ variables.JUNIT }}" getcarrier/perfmeter:2.0.5.3 -n -t /mnt/jmeter/${{ variables.TEST }}.jmx -JVUSERS=${{ variables.VUSERS }} -JRAMP_UP=${{ variables.RAMP_UP }} -JDURATION=${{ variables.DURATION }}
+         ls -la reports
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit' # Options: JUnit, NUnit, VSTest, xUnit, cTest
+        testResultsFiles: 'reports/jmeter.xml' 
+    - task: PublishPipelineArtifact@1
+      displayName: Publish JMeter Report
+      inputs:
+        targetPath: reports/HtmlReport
+        artifact: jmeter
+    - task: publishhtmlreport@1
+      inputs:
+        htmlType: 'Jmeter'
+        JmeterReportsPath: '$(Build.SourcesDirectory)/HtmlReport'
